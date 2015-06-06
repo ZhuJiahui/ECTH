@@ -23,7 +23,7 @@ def online_lda(read_directory1, read_directory2, write_directory1, write_directo
     #latent_topic_number = 50
     latent_topic_number = 25
     
-    for i in range(59, 69):
+    for i in range(59, 60):
         each_weibo_fenci = []
         all_weibo_word = []
         
@@ -31,6 +31,7 @@ def online_lda(read_directory1, read_directory2, write_directory1, write_directo
         f = open(read_directory2 + '/' + str(i + 1) + '.txt')
         line = f.readline()
         while line:
+            
             all_weibo_word.append([line.strip().split()[0]])
             line = f.readline()  
         f.close()

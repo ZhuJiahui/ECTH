@@ -203,6 +203,7 @@ def FDCM_T(T_vsm, dir_alpha):
     '''
         
     FDCM = 1.0
+    selected_num = 5
     
     T_shape = T_vsm.shape
     
@@ -211,8 +212,8 @@ def FDCM_T(T_vsm, dir_alpha):
         multinomial_down = np.prod(special.gamma(T_vsm + 1))
         
         #有问题
-        delta_up = delta_func(dir_alpha + T_vsm)  # 按列求和
-        delta_down = delta_func(dir_alpha)
+        delta_up = delta_func(dir_alpha + T_vsm, selected_num)  # 按列求和
+        delta_down = delta_func(dir_alpha, selected_num)
         
         this_FDCM = np.true_divide(multinomial_up, multinomial_down) * np.true_divide(delta_up, delta_down)
         
@@ -225,8 +226,8 @@ def FDCM_T(T_vsm, dir_alpha):
             multinomial_down = np.prod(special.gamma(T_vsm[i] + 1))
         
             #有问题
-            delta_up = delta_func(dir_alpha + T_vsm[i])  # 按列求和
-            delta_down = delta_func(dir_alpha)
+            delta_up = delta_func(dir_alpha + T_vsm[i], selected_num)  # 按列求和
+            delta_down = delta_func(dir_alpha, selected_num)
         
             this_FDCM = np.true_divide(multinomial_up, multinomial_down) * np.true_divide(delta_up, delta_down)
         
@@ -236,13 +237,18 @@ def FDCM_T(T_vsm, dir_alpha):
     return FDCM
         
         
-def delta_func(dir_alpha):
+def delta_func(dir_alpha, selected_num):
     '''
     LDA里面的delta函数
     :param dir_alpha: V维Dirichlet参数行向量
     '''
-    numerator = np.prod(special.gamma(dir_alpha))
-    denominator = special.gamma(np.sum(dir_alpha))
+    #选择值最大的前selectd_num个做运算
+    
+    sorted_data = np.sort(dir_alpha)
+    selected_data = sorted_data[(len(dir_alpha) - selected_num) :]
+    
+    numerator = np.prod(special.gamma(selected_data))
+    denominator = special.gamma(np.sum(selected_data))
     return np.true_divide(numerator, denominator)
 
 
@@ -376,7 +382,8 @@ def BRT_construct(T_vsm, proportion):
 
     vocabulary_num  = len(T_vsm[0])
     
-    dir_alpha = 0.287 * np.ones(vocabulary_num)
+    #dir_alpha = 0.287 * np.ones(vocabulary_num)
+    dir_alpha = 0.1 * np.ones(vocabulary_num)
     pai_gamma = 0.1
     
     brt_list = []
@@ -472,14 +479,14 @@ if __name__ == '__main__':
     
     # 本片数据的主题比例
     proportion = []
-    f1 = open(read_directory2 + '/' + str(63) + '.txt', 'rb')
+    f1 = open(read_directory2 + '/' + str(60) + '.txt', 'rb')
     line = f1.readline()
     while line:
         proportion.append(float(line.split()[1]))
         line = f1.readline()
     f1.close()
     
-    TW_vsm = np.loadtxt(read_directory + '/' + str(63) + '.txt')
+    TW_vsm = np.loadtxt(read_directory + '/' + str(60) + '.txt')
         
         
     #quick_write_list_to_text(SPTW_to_string, write_directory + '/' + str(i + 1) + '.txt')

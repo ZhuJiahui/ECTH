@@ -45,7 +45,7 @@ def to_curpus(read_directory1, read_directory2, write_directory):
         
         corpus = []
         
-        if len(all_weibo_fenci) >= 1000:
+        if len(all_weibo_fenci) >= 500:
             f = open(read_directory1 + '/' + str(i + 1) + '.txt')
             line = f.readline()
             while line:
@@ -76,9 +76,9 @@ if __name__ == "__main__":
     now_directory = os.getcwd()
     root_directory = os.path.dirname(now_directory) + '/'
 
-    read_directory1 = root_directory + u'dataset2/text_model/content1'
-    read_directory2 = root_directory + u'dataset2/text_model/select_words'
-    write_directory = root_directory + u'dataset2/text_model/corpus'
+    read_directory1 = root_directory + u'dataset2/text_model2/content1'
+    read_directory2 = root_directory + u'dataset2/text_model2/select_words'
+    write_directory = root_directory + u'dataset2/text_model2/corpus'
     
     if (not(os.path.exists(write_directory))):
         os.mkdir(write_directory)

@@ -118,6 +118,29 @@ def get_converged_P(Ps0, delta, R1, R2, it):
     return next_Ps
 
 
+def normalize_matrix(MAT):
+    max_value = np.max(MAT)
+    min_value = np.min(MAT)
+    
+    if (max_value - min_value) < 0.00001:
+        new_MAT = np.ones((MAT.shape[0], MAT.shape[1]))
+    else:
+        new_MAT = np.true_divide((MAT - min_value), (max_value - min_value))
+    
+    return new_MAT
+
+
+def get_restart_matrix(MAT):
+    max_index = np.argmax(MAT, 1)  # 按行
+    
+    r_MAT = np.zeros((MAT.shape[0], MAT.shape[1]))
+    
+    for i in range(len(max_index)):
+        r_MAT[i, max_index[i]] = 1.0
+    
+    return r_MAT
+
+
 def CT_RWR(TW_vsm1, TW_vsm2, proportion1, proportion2, wl1, wl2):
     
     simBRT1 = BRT_construct(TW_vsm1, proportion1)
@@ -128,14 +151,17 @@ def CT_RWR(TW_vsm1, TW_vsm2, proportion1, proportion2, wl1, wl2):
     W2 = inner_tree_sim(simBRT2, topic_num)
     Ws = cross_tree_sim(TW_vsm1, TW_vsm2, wl1, wl2)
     
+    W1 = normalize_matrix(W1)
+    W2 = normalize_matrix(W2)
+    Ws = normalize_matrix(Ws)
     #print W1
     #print W2
-    print Ws
+    #print Ws
     
     inv_D1 = get_inv_degree(W1)
     inv_D2 = get_inv_degree(W2)
     inv_Ds = get_inv_degree(Ws)
-    
+    #print inv_Ds
     
     
     P1 = np.dot(inv_D1, W1)
@@ -149,14 +175,30 @@ def CT_RWR(TW_vsm1, TW_vsm2, proportion1, proportion2, wl1, wl2):
     mu = 0.8
     eta = 0.8
     lam = 0.8
-    delta = 0.8
+    delta = 0.5
     
     R1 = (1 - mu) * np.linalg.inv((np.eye(topic_num) - mu * P1))
     R2 = (1 - eta) * np.linalg.inv((np.eye(topic_num) - eta * P2))
-
-    Ps = get_converged_P(Ps0, delta, R1, R2, it=10)
     
-    Rs = (1 - lam) * np.linalg.inv((np.eye(topic_num) - lam * Ps))
+    #print R1
+    
+    Ps = get_converged_P(Ps0, delta, R1, R2, it=1)
+    
+    #print Ps
+    #print np.dot(Ps, Ps.T)
+    restart_P = get_restart_matrix(Ps)
+    #print restart_P
+    
+    #write_matrix_to_text(Ps0, 'Ps0.txt')
+    #write_matrix_to_text(R1, 'R1.txt')
+    #write_matrix_to_text(R1, 'R2.txt')
+    
+    #print Ps
+    
+    #Rs = (1 - lam) * np.linalg.inv((np.eye(topic_num) - lam * np.dot(Ps, Ps.T)))
+    Rs = (1 - lam) * np.dot(np.linalg.inv((np.eye(topic_num) - lam * np.dot(Ps, Ps.T))), restart_P)
+    
+    #print Rs
     
     return simBRT1, simBRT2, Rs
     
@@ -176,7 +218,8 @@ if __name__ == '__main__':
     if (not(os.path.exists(write_directory))):
         os.mkdir(write_directory)
     
-    for i in range(63, 64):
+    #从63开始
+    for i in range(68, 69):
         
         # 主题边缘概率
         proportion1 = []
@@ -216,9 +259,10 @@ if __name__ == '__main__':
         
         simBRT1, simBRT2, Rs = CT_RWR(TW_vsm1, TW_vsm2, proportion1, proportion2, wl1, wl2)
         
-        print simBRT1.get_ascii(show_internal=True)
-        print simBRT2.get_ascii(show_internal=True)
-        #print Rs
+        #print simBRT1.get_ascii(show_internal=True)
+        #print simBRT2.get_ascii(show_internal=True)
+        Rs = normalize_matrix(Rs)
+        print Rs
         
         write_matrix_to_text(Rs, write_directory + '/' + str(i) + '.txt')
         

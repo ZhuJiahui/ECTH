@@ -7,8 +7,28 @@ Created on 2014年5月5日
 import os
 import time
 import re
+import nltk
+import string
 from TextToolkit import quick_write_list_to_text
 from TimeConvert import unCST_to_Unix, CST_to_Unix
+
+def get_stopwords2():
+    now_directory = os.getcwd()
+    root_directory = os.path.dirname(now_directory) +'/'
+    english_stop = [x.strip() for x in file (root_directory + "stopwords/Englishword.txt")]
+    english_stop2 = [x.strip() for x in file (root_directory + "stopwords/English_stopwords.txt")]
+    english_stop3 = [x.strip() for x in file (root_directory + "stopwords/English_mark_stop.txt")]
+    stopwords2 = set(english_stop + english_stop2 + english_stop3)
+    return stopwords2
+
+def is_english(word):
+    flag = 1
+    for each in word:
+        if (each.isalpha() == False) and (each != " "):
+            flag = 0
+            break
+    
+    return flag
 
 '''
 Step 4
@@ -26,8 +46,13 @@ def tw_word_segment(read_directory, write_directory1, write_directory2, write_di
     :param write_directory5:
     '''
     
+    stopwords_list = get_stopwords2()
+    included_tag = ["NP", "JJ", "JJR", "VB", "VBD", "VBG", "VBN", "VBP", "VBZ", "CD"]
+    
+    porter = nltk.PorterStemmer()
+    
     file_number = sum([len(files) for root, dirs, files in os.walk(read_directory)])
-    for i in range(file_number):
+    for i in range(9, file_number):
         time_series = []
         class_tag = []
         
@@ -56,27 +81,37 @@ def tw_word_segment(read_directory, write_directory1, write_directory2, write_di
                     tp = each[1 : -1].split(',')
                     wd = tp[0].strip()
                     wtg = tp[1].strip()
-                    wd_with_tag.append(wd + "," + wtg)
-                    wd_without_tag.append(wd)
+                    
+                    if (wtg in included_tag) and (wd.find("/") < 0):
+                        
+                        wd = wd.lower()
+                        delset = string.punctuation
+                        wd = wd.translate(None, delset).strip()  #这个strip不可少
+                        
+                        if (len(wd) > 2) and (wd not in stopwords_list) and is_english(wd) :
+                            wd = porter.stem(wd)
+                            wd_with_tag.append(wd + "," + wtg)
+                            wd_without_tag.append(wd)
+                            
+                if len(wd_with_tag) > 1:
+                    # 此处的词汇带有词性标注
+                    for word in set(wd_without_tag).difference(all_weibo_word):
+                        if word not in all_weibo_word:
+                            all_weibo_word.append(word)
             
-                # 此处的词汇带有词性标注
-                for word in set(wd_with_tag).difference(all_weibo_word):
-                    if word not in all_weibo_word:
-                        all_weibo_word.append(word)
-            
-                content_with_tag.append("---".join(wd_with_tag))
-                content_without_tag.append("---".join(wd_without_tag))
+                    content_with_tag.append("---".join(wd_with_tag))
+                    content_without_tag.append("---".join(wd_without_tag))
                 
-                cst_time = this_line[-1]
+                    cst_time = this_line[-1]
             
-                if cst_time.endswith("0000"):
-                    this_time = unCST_to_Unix(cst_time)
-                else:
-                    this_time = CST_to_Unix(cst_time)
+                    if cst_time.endswith("0000"):
+                        this_time = unCST_to_Unix(cst_time)
+                    else:
+                        this_time = CST_to_Unix(cst_time)
                 
-                time_series.append(str(this_time))
+                    time_series.append(str(this_time))
             
-                class_tag.append(this_line[0])
+                    class_tag.append(this_line[0])
             
             line = f.readline()
         f.close()
@@ -88,6 +123,7 @@ def tw_word_segment(read_directory, write_directory1, write_directory2, write_di
         quick_write_list_to_text(all_weibo_word, write_directory5 + '/' + str(i + 1) + '.txt')
         
         print "Segment %d Completed." % (i + 1)
+
 
 if __name__ == '__main__':
     start = time.clock()
@@ -125,4 +161,3 @@ if __name__ == '__main__':
     
     print 'Total time %f seconds' % (time.clock() - start)
     print 'Complete !!!'
-    
